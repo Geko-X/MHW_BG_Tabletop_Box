@@ -10,8 +10,11 @@ led = Pin(25, Pin.OUT)
 timer = Timer()
 
 # Potentiometers
-adcpin = 26
-pot_1 = ADC(adcpin)
+adc_0 = 26
+adc_1 = 27
+
+pot_0 = ADC(adc_0)
+pot_1 = ADC(adc_1)
 
 # 7-Seg
 # MAX7219 VCC pin to VBUS
@@ -64,7 +67,7 @@ def format_cards(count):
 	return "C" + str(count)
 
 def format_display(players, cards):
-	return ("%-4s" % format_players(players)) + ("%-4s" % format_cards(players))
+	return ("%-4s" % format_players(players)) + ("%-4s" % format_cards(cards))
 
 '''
 ======== MAIN ========
@@ -79,12 +82,13 @@ def main():
     while True:
         time.sleep(SLEEP_TIME)
 
-        value = read_pot_as_range(pot_1, GAME_PLAYERS_MAX)
+        players = read_pot_as_range(pot_0, GAME_PLAYERS_MAX)
+        cards = read_pot_as_range(pot_1, GAME_CARDS_MAX)
         
         # s = game.format_display(value, value)
         # print(s)
         
-        write_7seg_display(format_display(value, value))
+        write_7seg_display(format_display(players, cards))
         
         display.display()
         
