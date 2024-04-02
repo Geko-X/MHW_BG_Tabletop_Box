@@ -2,30 +2,31 @@ from machine import Pin, Timer, PWM, SPI, ADC
 import time
 import max7219_8digit as seg
 
+from pico_constats import *
+
 UPDATES_PER_SECOND = 10
 SLEEP_TIME = 1 / UPDATES_PER_SECOND
 
 # Main LED
-led = Pin(25, Pin.OUT)
+
+led = Pin(PIN_LED, Pin.OUT)
 timer = Timer()
 
 # Potentiometers
-adc_0 = 26
-adc_1 = 27
 
-pot_0 = ADC(adc_0)
-pot_1 = ADC(adc_1)
+pot_0 = ADC(PIN_ADC_0)
+pot_1 = ADC(PIN_ADC_1)
 
 # 7-Seg
-# MAX7219 VCC pin to VBUS
-# MAX7219 GND pin to GND
-# MAX7219 DIN pin to digital GPIO3
-# MAX7219 CS pin to digital GPIO5
-# MAX7219 CLOCK pin to digital GPIO2
 
-spi = SPI(0, baudrate=10000000, polarity=1, phase=0, sck=Pin(2), mosi=Pin(3))
-ss = Pin(5, Pin.OUT)
-display = seg.Display(spi, ss, 0)
+seg_data = Pin(PIN_SEG_DISPLAY_DATA)
+seg_clock = Pin(PIN_SEG_DISPLAY_CLOCK)
+seg_cs = Pin(PIN_SEG_DISPLAY_CS, Pin.OUT)
+
+DISPLAY_INTESITY = 0
+
+spi = SPI(0, baudrate=10000000, polarity=1, phase=0, sck = seg_clock, mosi = seg_data)
+display = seg.Display(spi, seg_cs, DISPLAY_INTESITY)
 
 
 '''
