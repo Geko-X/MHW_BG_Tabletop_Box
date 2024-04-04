@@ -42,6 +42,9 @@ stick = glowbit.stick(
     rateLimitFPS = GLOWBIT_FPS
 )
 
+# Buttons
+button_1 = Pin(PIN_INPUT_1, Pin.IN, Pin.PULL_UP)
+
 '''
 ======== HELPERS ========
 '''
@@ -112,13 +115,26 @@ graph = stick.newGraph1D(0, GLOWBIT_SIZE - 1, 0, GAME_TIME_START, stick.red(), "
 ======== MAIN ========
 '''
 
+def button_callback(p: Pin):
+    
+    if(p.value() == 0):
+        led.value(1)
+        
+    else:
+        led.value(0)
+        
+def button_callback_toggle(p: Pin):
+    led.toggle()
+
 def init():
     # Start main LED blink
-    timer.init(freq=1, mode=Timer.PERIODIC, callback=blink)
+    #timer.init(freq=1, mode=Timer.PERIODIC, callback=blink)
     write_7seg_display(' ')
     
     stick.chaos(5)
     stick.blankDisplay()
+
+    button_1.irq(handler = button_callback_toggle, trigger = Pin.IRQ_RISING)
 
 def main():
     

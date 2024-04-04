@@ -9,6 +9,8 @@ PIN_ADC_0 = 26
 PIN_ADC_1 = 27
 PIN_ADC_2 = 28
 
+PIN_INPUT_1 = 10
+
 # MAX7219 VCC pin to VBUS
 # MAX7219 GND pin to GND
 # MAX7219 DIN pin to digital GPIO3
