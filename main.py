@@ -43,7 +43,11 @@ stick = glowbit.stick(
 )
 
 # Buttons
-button_1 = Pin(PIN_INPUT_1, Pin.IN, Pin.PULL_UP)
+button_time = Pin(PIN_INPUT_1, Pin.IN, Pin.PULL_UP)
+button_player_1 = Pin(PIN_INPUT_2, Pin.IN, Pin.PULL_UP)
+button_player_2 = Pin(PIN_INPUT_3, Pin.IN, Pin.PULL_UP)
+button_card_1 = Pin(PIN_INPUT_4, Pin.IN, Pin.PULL_UP)
+button_card_2 = Pin(PIN_INPUT_5, Pin.IN, Pin.PULL_UP)
 
 '''
 ======== HELPERS ========
@@ -96,14 +100,31 @@ GAME_CARDS_MAX = 8
 
 GAME_TIME_START = 35
 
-def format_players(count) -> str:
-    return "P" + str(count)
+class Game():
+    currentHunters = 0
+    currentCards = 0
+    currentTime = 0
 
-def format_cards(count) -> str:
-	return "C" + str(count)
+    def __init__(self, hunters, cards, time):
+        self.currentHunters = hunters
+        self.currentCards = cards
+        self.currentTime = time
+        
+        print(self)
 
-def format_display(players, cards) -> str:
-	return ("%-4s" % format_players(players)) + ("%-4s" % format_cards(cards))
+    def get_formatted_players(self) -> str:
+        return "P" + str(self.currentHunters)
+
+    def get_formatted_cards(self) -> str:
+        return "C" + str(self.currentCards)
+
+    def get_fromatted_display(self) -> str:
+        return ("%-4s" % self.get_formatted_players()) + ("%-4s" % self.get_formatted_cards())
+
+    def __str__(self):
+        return "T: " + str(self.currentTime) + "\t" + self.get_fromatted_display()
+
+GAME = Game(GAME_PLAYERS_MAX, GAME_CARDS_MAX, GAME_TIME_START)
 
 '''
 ======== GLOWBIT ========
@@ -115,6 +136,8 @@ graph = stick.newGraph1D(0, GLOWBIT_SIZE - 1, 0, GAME_TIME_START, stick.red(), "
 ======== MAIN ========
 '''
 
+# Button interupts
+
 def button_callback(p: Pin):
     
     if(p.value() == 0):
@@ -123,51 +146,81 @@ def button_callback(p: Pin):
     else:
         led.value(0)
         
-def button_callback_toggle(p: Pin):
-    led.toggle()
+def button_player_increment(p: Pin):
+    GAME.currentHunters += 1
+    if(GAME.currentHunters > GAME_PLAYERS_MAX):
+        GAME.currentHunters = GAME_PLAYERS_MAX
+    
+def button_player_decrement(p: Pin):
+    GAME.currentHunters -= 1
+    if(GAME.currentHunters < 0):
+        GAME.currentHunters = 0
+    
+def button_cards_increment(p: Pin):
+    GAME.currentCards += 1
+    if(GAME.currentCards > GAME_CARDS_MAX):
+        GAME.currentCards = GAME_CARDS_MAX
+    
+def button_cards_decrement(p: Pin):
+    GAME.currentCards -= 1
+    if(GAME.currentCards < 0):
+        GAME.currentCards = 0
+    
+def button_decrement_time(p: Pin):
+    GAME.currentTime -= 1
+    if(GAME.currentTime < GAME_CARDS_MAX):
+        GAME.currentTime = 0
+        
+    write_7seg_display("T " + str(GAME.currentTime))
+    display.display()
+    time.sleep(1)
+
 
 def updateTimeGraph():
-    gameTimeCurrent = read_pot_as_range(pot_0, GAME_TIME_START)
+    gameTimeCurrent = GAME.currentTime
     c = lerp_color(stick.red(), stick.green(), gameTimeCurrent / GAME_TIME_START)
     graph.colour = c  
     stick.updateGraph1D(graph, gameTimeCurrent)
 
 def init():
     # Start main LED blink
-    #timer.init(freq=1, mode=Timer.PERIODIC, callback=blink)
-    write_7seg_display('TIME CDS')
+    timer.init(freq=1, mode=Timer.PERIODIC, callback=blink)
+    write_7seg_display('88888888')
     
     stick.chaos(5)
     stick.blankDisplay()
 
-    button_1.irq(handler = button_callback_toggle, trigger = Pin.IRQ_RISING)
+    button_time.irq(handler = button_decrement_time, trigger = Pin.IRQ_RISING)
+    button_player_1.irq(handler = button_player_increment, trigger = Pin.IRQ_RISING)
+    button_player_2.irq(handler = button_player_decrement, trigger = Pin.IRQ_RISING)
+    button_card_1.irq(handler = button_cards_increment, trigger = Pin.IRQ_RISING)
+    button_card_2.irq(handler = button_cards_decrement, trigger = Pin.IRQ_RISING)
 
 def main():
     
     while True:
+        
         time.sleep(SLEEP_TIME)
-
-        #players = read_pot_as_range(pot_0, GAME_PLAYERS_MAX)
-        #cards = read_pot_as_range(pot_1, GAME_CARDS_MAX)
         
-        #write_7seg_display(format_display(players, cards))
+        write_7seg_display(GAME.get_fromatted_display())
         
-        #updateTimeGraph()
+        updateTimeGraph()
         
-        brightness = read_pot_as_range(pot_0, 249) + 6
-        c = read_pot_as_range(pot_1, 255)
-        if(c <= 200):
-            color = stick.wheel(c)
-        else:
-            color = stick.white()
+        brightness = read_pot_as_range(pot_0, 50) + 6
+        # c = read_pot_as_range(pot_1, 255)
+        # if(c <= 200):
+        #     color = stick.wheel(c)
+        # else:
+        #     color = stick.white()
             
         stick.updateBrightness(brightness)
-        stick.pixelsFill(color)
+        # stick.pixelsFill(color)
         
-        stick.pixelsShow()
+        # stick.pixelsShow()
         display.display()
         
-        # print(stick.power())
+        # # print(stick.power())
+        # print(GAME)
         
 init()
 main()
