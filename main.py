@@ -5,7 +5,7 @@ import glowbit
 
 from pico_constants import *
 
-UPDATES_PER_SECOND = 10
+UPDATES_PER_SECOND = 100
 SLEEP_TIME = 1 / UPDATES_PER_SECOND
 
 # Main LED
@@ -77,11 +77,11 @@ def lerp_color(a, b, t):
 def blink(timer):
     led.toggle()
 
-def read_pot_normalised(pot): 
+def read_pot_normalised(pot) -> int: 
     value = 1 - normalise_value(pot.read_u16(), 65535)
     return round(value, 2)
 
-def read_pot_as_range(pot, max):
+def read_pot_as_range(pot, max) -> int:
     return round(read_pot_normalised(pot) * max)
 
 def write_7seg_display(msg):
@@ -96,13 +96,13 @@ GAME_CARDS_MAX = 8
 
 GAME_TIME_START = 35
 
-def format_players(count):
+def format_players(count) -> str:
     return "P" + str(count)
 
-def format_cards(count):
+def format_cards(count) -> str:
 	return "C" + str(count)
 
-def format_display(players, cards):
+def format_display(players, cards) -> str:
 	return ("%-4s" % format_players(players)) + ("%-4s" % format_cards(cards))
 
 '''
@@ -126,10 +126,16 @@ def button_callback(p: Pin):
 def button_callback_toggle(p: Pin):
     led.toggle()
 
+def updateTimeGraph():
+    gameTimeCurrent = read_pot_as_range(pot_0, GAME_TIME_START)
+    c = lerp_color(stick.red(), stick.green(), gameTimeCurrent / GAME_TIME_START)
+    graph.colour = c  
+    stick.updateGraph1D(graph, gameTimeCurrent)
+
 def init():
     # Start main LED blink
     #timer.init(freq=1, mode=Timer.PERIODIC, callback=blink)
-    write_7seg_display(' ')
+    write_7seg_display('TIME CDS')
     
     stick.chaos(5)
     stick.blankDisplay()
@@ -138,28 +144,30 @@ def init():
 
 def main():
     
-    gameTimeCurrent = GAME_TIME_START
-    
     while True:
         time.sleep(SLEEP_TIME)
 
-        players = read_pot_as_range(pot_0, GAME_PLAYERS_MAX)
-        cards = read_pot_as_range(pot_1, GAME_CARDS_MAX)
+        #players = read_pot_as_range(pot_0, GAME_PLAYERS_MAX)
+        #cards = read_pot_as_range(pot_1, GAME_CARDS_MAX)
         
-        # s = game.format_display(value, value)
-        # print(s)
+        #write_7seg_display(format_display(players, cards))
         
-        write_7seg_display(format_display(players, cards))
+        #updateTimeGraph()
         
+        brightness = read_pot_as_range(pot_0, 249) + 6
+        c = read_pot_as_range(pot_1, 255)
+        if(c <= 200):
+            color = stick.wheel(c)
+        else:
+            color = stick.white()
+            
+        stick.updateBrightness(brightness)
+        stick.pixelsFill(color)
+        
+        stick.pixelsShow()
         display.display()
-
-        gameTimeCurrent = gameTimeCurrent - 1
-        if(gameTimeCurrent <= 0):
-            gameTimeCurrent = GAME_TIME_START
         
-        c = lerp_color(stick.red(), stick.green(), gameTimeCurrent / GAME_TIME_START)
-        graph.colour = c  
-        stick.updateGraph1D(graph, gameTimeCurrent)
+        # print(stick.power())
         
 init()
 main()
