@@ -1,3 +1,4 @@
+from debounce import DebouncedSwitch
 from machine import Pin, Timer, PWM, SPI, ADC
 import time
 import max7219_8digit as seg
@@ -95,8 +96,8 @@ def write_7seg_display(msg):
 ======== GAME ========
 '''
 
-GAME_PLAYERS_MAX = 4
-GAME_CARDS_MAX = 8
+GAME_PLAYERS_MAX = 10
+GAME_CARDS_MAX = 10
 
 GAME_TIME_START = 35
 
@@ -124,7 +125,7 @@ class Game():
     def __str__(self):
         return "T: " + str(self.currentTime) + "\t" + self.get_fromatted_display()
 
-GAME = Game(GAME_PLAYERS_MAX, GAME_CARDS_MAX, GAME_TIME_START)
+GAME = Game(0, 0, GAME_TIME_START)
 
 '''
 ======== GLOWBIT ========
@@ -136,67 +137,76 @@ graph = stick.newGraph1D(0, GLOWBIT_SIZE - 1, 0, GAME_TIME_START, stick.red(), "
 ======== MAIN ========
 '''
 
-# Button interupts
+# Button callbacks
 
 def button_callback(p: Pin):
     
-    if(p.value() == 0):
-        led.value(1)
+    # if(p.value() == 0):
+    #     led.value(1)
         
-    else:
-        led.value(0)
+    # else:
+    #     led.value(0)
         
-def button_player_increment(p: Pin):
-    GAME.currentHunters += 1
+    led.toggle()
+    print("BUTTON: "+ str(p.value()))
+        
+def button_player_update(change: int):
+    GAME.currentHunters += change
     if(GAME.currentHunters > GAME_PLAYERS_MAX):
         GAME.currentHunters = GAME_PLAYERS_MAX
-    
-def button_player_decrement(p: Pin):
-    GAME.currentHunters -= 1
     if(GAME.currentHunters < 0):
         GAME.currentHunters = 0
     
-def button_cards_increment(p: Pin):
-    GAME.currentCards += 1
+def button_cards_update(change: int):
+    GAME.currentCards += change
     if(GAME.currentCards > GAME_CARDS_MAX):
         GAME.currentCards = GAME_CARDS_MAX
-    
-def button_cards_decrement(p: Pin):
-    GAME.currentCards -= 1
     if(GAME.currentCards < 0):
         GAME.currentCards = 0
-    
-def button_decrement_time(p: Pin):
+
+def button_decrement_time(args):
     GAME.currentTime -= 1
     if(GAME.currentTime < GAME_CARDS_MAX):
         GAME.currentTime = 0
         
-    write_7seg_display("T " + str(GAME.currentTime))
-    display.display()
-    time.sleep(1)
+    # write_7seg_display("T " + str(GAME.currentTime))
+    # display.display()
+    # time.sleep(1)
 
+start_color = stick.green()
+end_color = stick.red()
 
 def updateTimeGraph():
     gameTimeCurrent = GAME.currentTime
-    c = lerp_color(stick.red(), stick.green(), gameTimeCurrent / GAME_TIME_START)
-    graph.colour = c  
+    c = lerp_color(end_color, start_color, gameTimeCurrent / GAME_TIME_START)
+    graph.colour = c
     stick.updateGraph1D(graph, gameTimeCurrent)
 
 def init():
     # Start main LED blink
-    timer.init(freq=1, mode=Timer.PERIODIC, callback=blink)
-    write_7seg_display('88888888')
+    #timer.init(freq=1, mode=Timer.PERIODIC, callback=blink)
+    write_7seg_display('MHW BG')
+    display.display()
     
-    stick.chaos(5)
+    # Button callbacks
+    # button_time.irq(handler = button_decrement_time, trigger = Pin.IRQ_FALLING)
+    # button_player_1.irq(handler = button_player_increment, trigger = Pin.IRQ_FALLING)
+    # button_player_2.irq(handler = button_player_decrement, trigger = Pin.IRQ_FALLING)
+    # button_card_1.irq(handler = button_cards_increment, trigger = Pin.IRQ_FALLING)
+    # button_card_2.irq(handler = button_cards_decrement, trigger = Pin.IRQ_FALLING)
+    DebouncedSwitch(button_time, button_decrement_time)
+    DebouncedSwitch(button_player_1, button_player_update, 1)
+    DebouncedSwitch(button_player_2, button_player_update, -1)
+    DebouncedSwitch(button_card_1, button_cards_update, 1)
+    DebouncedSwitch(button_card_2, button_cards_update, -1)
+    
+    # Initialise the LED stick
+    stick.chaos(20)
     stick.blankDisplay()
 
-    button_time.irq(handler = button_decrement_time, trigger = Pin.IRQ_RISING)
-    button_player_1.irq(handler = button_player_increment, trigger = Pin.IRQ_RISING)
-    button_player_2.irq(handler = button_player_decrement, trigger = Pin.IRQ_RISING)
-    button_card_1.irq(handler = button_cards_increment, trigger = Pin.IRQ_RISING)
-    button_card_2.irq(handler = button_cards_decrement, trigger = Pin.IRQ_RISING)
-
 def main():
+    
+    global start_color
     
     while True:
         
@@ -207,11 +217,11 @@ def main():
         updateTimeGraph()
         
         brightness = read_pot_as_range(pot_0, 50) + 6
-        # c = read_pot_as_range(pot_1, 255)
-        # if(c <= 200):
-        #     color = stick.wheel(c)
-        # else:
-        #     color = stick.white()
+        c = read_pot_as_range(pot_1, 255)
+        if(c <= 200):
+            start_color = stick.wheel(c)
+        else:
+            start_color = stick.white()
             
         stick.updateBrightness(brightness)
         # stick.pixelsFill(color)
