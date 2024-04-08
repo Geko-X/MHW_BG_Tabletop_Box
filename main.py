@@ -1,5 +1,6 @@
 from debounce import DebouncedSwitch
 from machine import Pin, Timer, PWM, SPI, ADC
+import micropython
 import time
 import max7219_8digit as seg
 import glowbit
@@ -100,19 +101,19 @@ def write_7seg_display(msg):
 GAME_PLAYERS_MAX = 10
 GAME_CARDS_MAX = 10
 
-GAME_TIME_START = 35
+GAME_TIME_START = 40
 
 class Game():
 	currentHunters = 0
 	currentCards = 0
 	currentTime = 0
 
+	setup = True
+
 	def __init__(self, hunters, cards, time):
 		self.currentHunters = hunters
 		self.currentCards = cards
 		self.currentTime = time
-		
-		print(self)
 
 	def get_formatted_players(self) -> str:
 		return "P" + str(self.currentHunters)
@@ -123,6 +124,17 @@ class Game():
 	def get_fromatted_display(self) -> str:
 		return ("%-4s" % self.get_formatted_players()) + ("%-4s" % self.get_formatted_cards())
 
+	def set_time(self, time: int):
+		if(time > GAME_TIME_START):
+			time = GAME_TIME_START
+		if(time < 0):
+			time = 0
+
+		self.currentTime = time
+
+	def add_time(self, change: int):
+		self.set_time(self.currentTime + change)
+
 	def __str__(self):
 		return "T: " + str(self.currentTime) + "\t" + self.get_fromatted_display()
 
@@ -132,11 +144,15 @@ GAME = Game(0, 0, GAME_TIME_START)
 ======== GLOWBIT ========
 '''
 
-graph = stick.newGraph1D(0, GLOWBIT_SIZE - 1, 0, GAME_TIME_START, stick.red(), "Solid", True)
+graph = None
 
 '''
 ======== MAIN ========
 '''
+
+def init_timegraph():
+	global graph
+	graph = stick.newGraph1D(0, GLOWBIT_SIZE - 1, 0, GAME_TIME_START, stick.red(), "Solid", True)
 
 # Button callbacks
 
@@ -152,23 +168,41 @@ def button_callback(p: Pin):
 	print("BUTTON: "+ str(p.value()))
 		
 def button_player_update(change: int):
-	GAME.currentHunters += change
-	if(GAME.currentHunters > GAME_PLAYERS_MAX):
-		GAME.currentHunters = GAME_PLAYERS_MAX
-	if(GAME.currentHunters < 0):
-		GAME.currentHunters = 0
+		
+	if(GAME.setup):
+		GAME.add_time(change * 5)
+		return
+	
+	else:
+		GAME.currentHunters = GAME.currentHunters + change
+		if(GAME.currentHunters > GAME_PLAYERS_MAX):
+			GAME.currentHunters = GAME_PLAYERS_MAX
+		if(GAME.currentHunters < 0):
+			GAME.currentHunters = 0
 	
 def button_cards_update(change: int):
-	GAME.currentCards += change
-	if(GAME.currentCards > GAME_CARDS_MAX):
-		GAME.currentCards = GAME_CARDS_MAX
-	if(GAME.currentCards < 0):
-		GAME.currentCards = 0
+	
+	if(GAME.setup):
+		GAME.add_time(change)
+		return
+  
+	else:	
+		GAME.currentCards = GAME.currentCards + change
+		if(GAME.currentCards > GAME_CARDS_MAX):
+			GAME.currentCards = GAME_CARDS_MAX
+		if(GAME.currentCards < 0):
+			GAME.currentCards = 0
 
 def button_decrement_time(args):
-	GAME.currentTime -= 1
-	if(GAME.currentTime < GAME_CARDS_MAX):
-		GAME.currentTime = 0
+	
+	if(GAME.setup):
+		GAME.setup = False
+		init_timegraph()
+  
+	else:
+		GAME.currentTime -= 1
+		if(GAME.currentTime < GAME_CARDS_MAX):
+			GAME.currentTime = 0
 		
 	# write_7seg_display("T " + str(GAME.currentTime))
 	# display.display()
@@ -178,15 +212,20 @@ start_color = stick.green()
 end_color = stick.red()
 
 def updateTimeGraph():
-	gameTimeCurrent = GAME.currentTime
-	c = lerp_color(end_color, start_color, gameTimeCurrent / GAME_TIME_START)
-	graph.colour = c
-	stick.updateGraph1D(graph, gameTimeCurrent)
+ 
+	if(graph is None):
+		return
+	
+	else:
+		gameTimeCurrent = GAME.currentTime
+		c = lerp_color(end_color, start_color, gameTimeCurrent / GAME_TIME_START)
+		graph.colour = c
+		stick.updateGraph1D(graph, gameTimeCurrent)
 
 def init():
 	# Start main LED blink
 	#timer.init(freq=1, mode=Timer.PERIODIC, callback=blink)
-	write_7seg_display('MHW BG')
+	write_7seg_display("MHW BG")
 	display.display()
 	
 	# Button callbacks
@@ -204,7 +243,12 @@ def init():
 	# Initialise the LED stick
 	stick.chaos(20)
 	stick.blankDisplay()
-
+ 
+	time.sleep(1)
+ 
+	write_7seg_display("TIME " + str(GAME.currentTime))
+	display.display()
+ 
 def main():
 	
 	global start_color
@@ -213,26 +257,28 @@ def main():
 		
 		time.sleep(SLEEP_TIME)
 		
-		write_7seg_display(GAME.get_fromatted_display())
-		
-		updateTimeGraph()
-		
 		brightness = read_pot_as_range(pot_0, 50) + 6
 		c = read_pot_as_range(pot_1, 255)
-		if(c <= 200):
+		if(c <= 250):
 			start_color = stick.wheel(c)
 		else:
 			start_color = stick.white()
 			
 		stick.updateBrightness(brightness)
-		# stick.pixelsFill(color)
+  
+		if(GAME.setup):
+			write_7seg_display("T " + str(GAME.currentTime))
+			stick.pixelsFillNow(start_color)
+
+		else:
+			write_7seg_display(GAME.get_fromatted_display())
 		
+		updateTimeGraph()
+  
+		# stick.pixelsFill(color)
 		# stick.pixelsShow()
 		display.display()
 		
-		# # print(stick.power())
-		# print(GAME)
-		
 init()
-# main()
-patterns_test(stick)
+main()
+#patterns_test(stick)
