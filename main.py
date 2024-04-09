@@ -5,6 +5,8 @@ import time
 import max7219_8digit as seg
 import glowbit
 
+import asyncio
+
 from pico_constants import *
 from patterns import *
 
@@ -109,6 +111,7 @@ class Game():
 	currentTime = 0
 
 	setup = True
+	pattern = False
 
 	def __init__(self, hunters, cards, time):
 		self.currentHunters = hunters
@@ -145,6 +148,20 @@ GAME = Game(0, 0, GAME_TIME_START)
 '''
 
 graph = None
+
+'''
+======== ASYNC TASKS ========
+
+'''
+
+async def task_blink_led(time = 1):
+	while True:
+		led.toggle()
+		await asyncio.sleep(time)
+
+async def task_pattern_test():
+	loop_pixel(stick, 0xFF0000, 3)
+	#await asyncio.sleep(0)
 
 '''
 ======== MAIN ========
@@ -185,8 +202,9 @@ def button_cards_update(change: int):
 	if(GAME.setup):
 		GAME.add_time(change)
 		return
-  
-	else:	
+
+	else:
+		asyncio.run(task_pattern_test())
 		GAME.currentCards = GAME.currentCards + change
 		if(GAME.currentCards > GAME_CARDS_MAX):
 			GAME.currentCards = GAME_CARDS_MAX
@@ -195,6 +213,8 @@ def button_cards_update(change: int):
 
 def button_decrement_time(args):
 	
+	print("Button time")
+ 
 	if(GAME.setup):
 		GAME.setup = False
 		init_timegraph()
@@ -222,7 +242,12 @@ def updateTimeGraph():
 		graph.colour = c
 		stick.updateGraph1D(graph, gameTimeCurrent)
 
-def init():
+
+async def init():
+	
+	print("Starting async tasks")
+	asyncio.create_task(task_blink_led(1))
+ 
 	# Start main LED blink
 	#timer.init(freq=1, mode=Timer.PERIODIC, callback=blink)
 	write_7seg_display("MHW BG")
@@ -241,21 +266,21 @@ def init():
 	DebouncedSwitch(button_card_2, button_cards_update, -1)
 	
 	# Initialise the LED stick
-	stick.chaos(20)
-	stick.blankDisplay()
- 
-	time.sleep(1)
- 
+	stick.chaos(200)
 	write_7seg_display("TIME " + str(GAME.currentTime))
 	display.display()
+	stick.chaos(200)
  
-def main():
+	await asyncio.sleep(0)
+ 
+async def main():
 	
 	global start_color
 	
+	await init()
+	await asyncio.sleep(0)
+ 
 	while True:
-		
-		time.sleep(SLEEP_TIME)
 		
 		brightness = read_pot_as_range(pot_0, 50) + 6
 		c = read_pot_as_range(pot_1, 255)
@@ -266,19 +291,39 @@ def main():
 			
 		stick.updateBrightness(brightness)
   
-		if(GAME.setup):
+		if GAME.setup:
 			write_7seg_display("T " + str(GAME.currentTime))
 			stick.pixelsFillNow(start_color)
+			stick.pixelsShow()
 
 		else:
 			write_7seg_display(GAME.get_fromatted_display())
 		
-		updateTimeGraph()
+		if not GAME.pattern:
+			updateTimeGraph()
   
 		# stick.pixelsFill(color)
 		# stick.pixelsShow()
 		display.display()
 		
-init()
-main()
+		await asyncio.sleep(SLEEP_TIME)
+
+async def shutdown():
+		
+	print("Cleanup")
+		
+	write_7seg_display("        ")
+	display.display()
+	stick.pixelsFillNow(stick.black())
+	led.off()
+	
+	for task in asyncio.gather():
+		task.cancel()
+		
+try:
+	asyncio.run(main())
+except:
+	asyncio.run(shutdown())
+finally:
+	asyncio.new_event_loop()
 #patterns_test(stick)
