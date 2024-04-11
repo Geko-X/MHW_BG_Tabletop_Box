@@ -160,7 +160,11 @@ async def task_blink_led(time = 1):
 		await asyncio.sleep(time)
 
 async def task_pattern_test():
-	loop_pixel(stick, 0xFF0000, 3)
+	GAME.pattern = True
+	print("Pattern Test")
+	#await loop_pixel_async(stick, 0xFF0000, 3)
+	flash(stick)
+	GAME.pattern = False
 	#await asyncio.sleep(0)
 
 '''
@@ -204,7 +208,7 @@ def button_cards_update(change: int):
 		return
 
 	else:
-		asyncio.run(task_pattern_test())
+		asyncio.create_task(task_pattern_test())
 		GAME.currentCards = GAME.currentCards + change
 		if(GAME.currentCards > GAME_CARDS_MAX):
 			GAME.currentCards = GAME_CARDS_MAX
@@ -212,8 +216,6 @@ def button_cards_update(change: int):
 			GAME.currentCards = 0
 
 def button_decrement_time(args):
-	
-	print("Button time")
  
 	if(GAME.setup):
 		GAME.setup = False
@@ -221,9 +223,10 @@ def button_decrement_time(args):
   
 	else:
 		GAME.currentTime -= 1
+		print("Time: " + str(GAME.currentTime))
 		if(GAME.currentTime < GAME_CARDS_MAX):
 			GAME.currentTime = 0
-		
+   
 	# write_7seg_display("T " + str(GAME.currentTime))
 	# display.display()
 	# time.sleep(1)
