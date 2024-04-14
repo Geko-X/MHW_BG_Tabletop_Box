@@ -105,56 +105,52 @@ def intensify(stick: glowbit.stick, count: int = 5, fps: int = 100):
         c = (r << 16) + (r << 8) + r
         stick.pixelsFillNow(c)
 
-def flash(stick: glowbit.stick, brightness = 50):
-    
-    delta = 1 / float(stick.rateLimit)
-    
+def flash(stick: glowbit.stick, color = 0xEAE347, brightness = 50, flash_time = 0.5, count = 1, delay = 0.2):   
     stick.blankDisplay()
     stick.pixelsShow()
-    
-    time.sleep(0.5)
-    c = 0xEAE347
-    stick.pixelsFill(c)
+
+    stick.pixelsFill(color)
     stick.updateBrightness(brightness / 2)
     
-    # 2 small flashes at half brightness
-    for _ in range(2):
+    ticks = flash_time * stick.rateLimit
+    
+    for _ in range(count):
+        b_delta = stick.brightness / ticks
         b = stick.brightness
         
-        while b > 0:
-            b = b - 3
-            if b < 0: b = 0
+        for t in range(ticks):
+            b = b - b_delta
+            if b <= 1: b = 0
+            
             stick.updateBrightness(b)
             stick.pixelsShow()
             
         stick.updateBrightness(brightness / 2)
         time.sleep(0.2)
         
-    time.sleep(1)
-    
-    # Big flash
-    stick.updateBrightness(brightness)
-    b = (float)(stick.brightness) / 255
-        
-    while b > 0:
-        b = b - 0.002
-        #print(b)
-        if b < 0: b = 0
-        stick.updateBrightness(b)
-        stick.pixelsShow()
 
-    time.sleep(0.2)
+def tziti_flash(stick: glowbit.stick):
+    stick.blankDisplay()
+    stick.pixelsShow()
+    time.sleep(0.5)
+    
+    flash(stick, color = stick.green(), brightness = 40, flash_time = 0.2, count = 2)
+    time.sleep(0.8)
+    flash(stick, brightness = 75, flash_time = 1)
 
 # Main
 def patterns_test(stick: glowbit.stick):
-    colors = [stick.red(), stick.green(), stick.blue(), stick.white(), stick.yellow(), stick.cyan(), stick.cyan()]
-    c = 0
-    while(True):
-        color = colors[c % len(colors)]
-        c += 1
-        ping_pong(stick, color, 2, 1)
-        loop_with_colors(stick, colors, 10, fps = 200)
-        stick.brightness = 5
-        breath(stick, color, 2)
-        intensify(stick, 2)
+    
+    tziti_flash(stick)
+    
+    # colors = [stick.red(), stick.green(), stick.blue(), stick.white(), stick.yellow(), stick.cyan(), stick.cyan()]
+    # c = 0
+    # while(True):
+    #     color = colors[c % len(colors)]
+    #     c += 1
+    #     ping_pong(stick, color, 2, 1)
+    #     loop_with_colors(stick, colors, 10, fps = 200)
+    #     stick.brightness = 5
+    #     breath(stick, color, 2)
+    #     intensify(stick, 2)
         

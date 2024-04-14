@@ -163,7 +163,7 @@ async def task_pattern_test():
 	GAME.pattern = True
 	print("Pattern Test")
 	#await loop_pixel_async(stick, 0xFF0000, 3)
-	flash(stick)
+	patterns_test(stick)
 	GAME.pattern = False
 	#await asyncio.sleep(0)
 
@@ -272,7 +272,9 @@ async def init():
 	stick.chaos(200)
 	write_7seg_display("TIME " + str(GAME.currentTime))
 	display.display()
-	stick.chaos(200)
+	#stick.chaos(200)
+ 
+	GAME.setup = False
  
 	await asyncio.sleep(0)
  
