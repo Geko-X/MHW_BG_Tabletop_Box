@@ -35,24 +35,36 @@ spi = SPI(0, baudrate=10000000, polarity=1, phase=0, sck = seg_clock, mosi = seg
 display = seg.Display(spi, seg_cs, DISPLAY_INTESITY)
 
 # Glowbit
-GLOWBIT_PIN = 18
-GLOWBIT_SIZE = 16
+GLOWBIT_SIZE = 150
 GLOWBIT_BRIGHTNESS = 8
 GLOWBIT_FPS = UPDATES_PER_SECOND
 
 stick = glowbit.stick(
-	pin = GLOWBIT_PIN,
+	pin = PIN_LEDS_SMALL,
+	numLEDs = 16,
+	brightness = GLOWBIT_BRIGHTNESS,
+	rateLimitFPS = GLOWBIT_FPS
+)
+
+effect_stick = glowbit.stick(
+	pin = PIN_LEDS_LARGE,
 	numLEDs = GLOWBIT_SIZE,
 	brightness = GLOWBIT_BRIGHTNESS,
 	rateLimitFPS = GLOWBIT_FPS
 )
 
 # Buttons
-button_time = Pin(PIN_INPUT_1, Pin.IN, Pin.PULL_UP)
-button_player_1 = Pin(PIN_INPUT_2, Pin.IN, Pin.PULL_UP)
-button_player_2 = Pin(PIN_INPUT_3, Pin.IN, Pin.PULL_UP)
-button_card_1 = Pin(PIN_INPUT_4, Pin.IN, Pin.PULL_UP)
-button_card_2 = Pin(PIN_INPUT_5, Pin.IN, Pin.PULL_UP)
+button_time = Pin(PIN_INPUT_10, Pin.IN, Pin.PULL_DOWN)
+button_player_1 = Pin(PIN_INPUT_9, Pin.IN, Pin.PULL_DOWN)
+button_player_2 = Pin(PIN_INPUT_8, Pin.IN, Pin.PULL_DOWN)
+button_card_1 = Pin(PIN_INPUT_7, Pin.IN, Pin.PULL_DOWN)
+button_card_2 = Pin(PIN_INPUT_6, Pin.IN, Pin.PULL_DOWN)
+
+button_effect_1 = Pin(PIN_INPUT_1, Pin.IN, Pin.PULL_DOWN)
+button_effect_2 = Pin(PIN_INPUT_2, Pin.IN, Pin.PULL_DOWN)
+button_effect_3 = Pin(PIN_INPUT_3, Pin.IN, Pin.PULL_DOWN)
+button_effect_4 = Pin(PIN_INPUT_4, Pin.IN, Pin.PULL_DOWN)
+button_effect_5 = Pin(PIN_INPUT_5, Pin.IN, Pin.PULL_DOWN)
 
 '''
 ======== HELPERS ========
@@ -95,6 +107,7 @@ def read_pot_as_range(pot, max) -> int:
 
 def write_7seg_display(msg):
 	display.write_to_buffer(str(msg))
+	#print("Display -> "  + str(msg))
 
 '''
 ======== GAME ========
@@ -134,9 +147,11 @@ class Game():
 			time = 0
 
 		self.currentTime = time
+		print("Time set to " + str(time))
 
 	def add_time(self, change: int):
 		self.set_time(self.currentTime + change)
+		print("Adding time: " + str(change))
 
 	def __str__(self):
 		return "T: " + str(self.currentTime) + "\t" + self.get_fromatted_display()
@@ -173,21 +188,24 @@ async def task_pattern_test():
 
 def init_timegraph():
 	global graph
-	graph = stick.newGraph1D(0, GLOWBIT_SIZE - 1, 0, GAME_TIME_START, stick.red(), "Solid", True)
+	graph = stick.newGraph1D(0, 16 - 1, 0, GAME.currentTime, stick.red(), "Solid", True)
+	print("Started time graph with max time of " + str(GAME.currentTime))
 
 # Button callbacks
 
-def button_callback(p: Pin):
-	
-	# if(p.value() == 0):
-	#	 led.value(1)
-		
-	# else:
-	#	 led.value(0)
-		
+def button_callback(p: int):		
 	led.toggle()
-	print("BUTTON: "+ str(p.value()))
-		
+	print("BUTTON: "+ str(p))
+ 
+def button_effect_start(i: int):
+    print("Starting effect "+ str(i))
+    
+    if i == 1:
+        tziti_flash(effect_stick)
+        
+    if i == 2:
+        ping_pong(effect_stick, effect_stick.red(), 1, 1, 500)
+ 
 def button_player_update(change: int):
 		
 	if(GAME.setup):
@@ -250,31 +268,30 @@ async def init():
 	
 	print("Starting async tasks")
 	asyncio.create_task(task_blink_led(1))
- 
-	# Start main LED blink
-	#timer.init(freq=1, mode=Timer.PERIODIC, callback=blink)
 	write_7seg_display("MHW BG")
 	display.display()
 	
 	# Button callbacks
-	# button_time.irq(handler = button_decrement_time, trigger = Pin.IRQ_FALLING)
-	# button_player_1.irq(handler = button_player_increment, trigger = Pin.IRQ_FALLING)
-	# button_player_2.irq(handler = button_player_decrement, trigger = Pin.IRQ_FALLING)
-	# button_card_1.irq(handler = button_cards_increment, trigger = Pin.IRQ_FALLING)
-	# button_card_2.irq(handler = button_cards_decrement, trigger = Pin.IRQ_FALLING)
 	DebouncedSwitch(button_time, button_decrement_time)
 	DebouncedSwitch(button_player_1, button_player_update, 1)
 	DebouncedSwitch(button_player_2, button_player_update, -1)
 	DebouncedSwitch(button_card_1, button_cards_update, 1)
 	DebouncedSwitch(button_card_2, button_cards_update, -1)
+ 
+	DebouncedSwitch(button_effect_1, button_effect_start, 1)
+	DebouncedSwitch(button_effect_2, button_effect_start, 2)
+	DebouncedSwitch(button_effect_3, button_effect_start, 3)
+	DebouncedSwitch(button_effect_4, button_effect_start, 4)
+	DebouncedSwitch(button_effect_5, button_effect_start, 5)
 	
 	# Initialise the LED stick
 	stick.chaos(200)
+	effect_stick.chaos(200)
 	write_7seg_display("TIME " + str(GAME.currentTime))
 	display.display()
 	#stick.chaos(200)
  
-	GAME.setup = False
+	#GAME.setup = False
  
 	await asyncio.sleep(0)
  
@@ -320,6 +337,7 @@ async def shutdown():
 	write_7seg_display("        ")
 	display.display()
 	stick.pixelsFillNow(stick.black())
+	effect_stick.pixelsFillNow(effect_stick.black())
 	led.off()
 	
 	for task in asyncio.gather():

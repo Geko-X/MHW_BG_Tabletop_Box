@@ -27,6 +27,8 @@ class DebouncedSwitch:
         self.delay = delay
         self.tim = Timer(tid)
         self.callback(cb, arg)
+        
+        print(self)
 
     def sw_cb(self, pin=None):
         self._set_cb(None)
@@ -43,6 +45,9 @@ class DebouncedSwitch:
         self.cb = cb
         self.arg = arg
         self._set_cb(self._sw_cb if cb else None)
+        
+    def __str__(self):
+        return "Debounced Switch: pin " + str(self.sw) + "|callback: " + str(self.cb) + "|args: " + str(self.arg)
 
 
 def test_pyb(ledno=1):

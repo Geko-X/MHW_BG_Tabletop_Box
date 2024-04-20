@@ -134,23 +134,23 @@ def tziti_flash(stick: glowbit.stick):
     stick.pixelsShow()
     time.sleep(0.5)
     
-    flash(stick, color = stick.green(), brightness = 40, flash_time = 0.2, count = 2)
+    flash(stick, brightness = 40, flash_time = 0.2, count = 2)
     time.sleep(0.8)
     flash(stick, brightness = 75, flash_time = 1)
 
 # Main
 def patterns_test(stick: glowbit.stick):
     
-    tziti_flash(stick)
+    #tziti_flash(stick)
     
-    # colors = [stick.red(), stick.green(), stick.blue(), stick.white(), stick.yellow(), stick.cyan(), stick.cyan()]
-    # c = 0
-    # while(True):
-    #     color = colors[c % len(colors)]
-    #     c += 1
-    #     ping_pong(stick, color, 2, 1)
-    #     loop_with_colors(stick, colors, 10, fps = 200)
-    #     stick.brightness = 5
-    #     breath(stick, color, 2)
-    #     intensify(stick, 2)
+    colors = [stick.red(), stick.green(), stick.blue(), stick.white(), stick.yellow(), stick.cyan(), stick.cyan()]
+    c = 0
+    while(True):
+        color = colors[c % len(colors)]
+        c += 1
+        ping_pong(stick, color, 2, 1)
+        loop_with_colors(stick, colors, 10, fps = 200)
+        stick.brightness = 5
+        breath(stick, color, 2)
+        intensify(stick, 2)
         
