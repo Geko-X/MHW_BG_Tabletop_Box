@@ -39,19 +39,23 @@ GLOWBIT_SIZE = 150
 GLOWBIT_BRIGHTNESS = 8
 GLOWBIT_FPS = UPDATES_PER_SECOND
 
-stick = glowbit.stick(
-	pin = PIN_LEDS_SMALL,
-	numLEDs = 16,
-	brightness = GLOWBIT_BRIGHTNESS,
-	rateLimitFPS = GLOWBIT_FPS
-)
-
 effect_stick = glowbit.stick(
 	pin = PIN_LEDS_LARGE,
 	numLEDs = GLOWBIT_SIZE,
 	brightness = GLOWBIT_BRIGHTNESS,
-	rateLimitFPS = GLOWBIT_FPS
+	rateLimitFPS = GLOWBIT_FPS,
+	sm = 0
 )
+
+stick = glowbit.stick(
+	pin = PIN_LEDS_SMALL,
+	numLEDs = 16,
+	brightness = GLOWBIT_BRIGHTNESS,
+	rateLimitFPS = GLOWBIT_FPS,
+	sm = 1
+)
+
+
 
 # Buttons
 button_time = Pin(PIN_INPUT_10, Pin.IN, Pin.PULL_DOWN)
@@ -72,24 +76,6 @@ button_effect_5 = Pin(PIN_INPUT_5, Pin.IN, Pin.PULL_DOWN)
 
 def normalise_value(value, max = 1):
 	return value / max
-
-def lerp(a, b, t):
-	return a + (b - a) * t
-
-def lerp_int(a, b, t):
-	return (int)(lerp(a, b, t))
-
-def lerp_color(a, b, t):
-	c1 = stick.glowbitColour2RGB(a)
-	c2 = stick.glowbitColour2RGB(b)
-	
-	c3 = (lerp_int(c1[0], c2[0], t),
-		  lerp_int(c1[1], c2[1], t),
-		  lerp_int(c1[2], c2[2], t)
-		)
-	
-	return stick.rgbColour(c3[0], c3[1], c3[2])
-
 '''
 ======== HARDWARE ========
 '''
@@ -150,8 +136,8 @@ class Game():
 		print("Time set to " + str(time))
 
 	def add_time(self, change: int):
-		self.set_time(self.currentTime + change)
 		print("Adding time: " + str(change))
+		self.set_time(self.currentTime + change)
 
 	def __str__(self):
 		return "T: " + str(self.currentTime) + "\t" + self.get_fromatted_display()
@@ -178,7 +164,7 @@ async def task_pattern_test():
 	GAME.pattern = True
 	print("Pattern Test")
 	#await loop_pixel_async(stick, 0xFF0000, 3)
-	patterns_test(stick)
+	#patterns_test(stick)
 	GAME.pattern = False
 	#await asyncio.sleep(0)
 
@@ -186,9 +172,16 @@ async def task_pattern_test():
 ======== MAIN ========
 '''
 
+table_color = effect_stick.blue()
+start_color = stick.green()
+end_color = stick.red()
+
 def init_timegraph():
 	global graph
-	graph = stick.newGraph1D(0, 16 - 1, 0, GAME.currentTime, stick.red(), "Solid", True)
+	global GAME_TIME_START
+ 
+	GAME_TIME_START = GAME.currentTime
+	graph = stick.newGraph1D(0, 16 - 1, 0, GAME.currentTime, start_color, "Solid", True)
 	print("Started time graph with max time of " + str(GAME.currentTime))
 
 # Button callbacks
@@ -204,7 +197,16 @@ def button_effect_start(i: int):
         tziti_flash(effect_stick)
         
     if i == 2:
-        ping_pong(effect_stick, effect_stick.red(), 1, 1, 500)
+        scoutfly(effect_stick)    
+        
+    if i == 3:
+        c = lerp_color(effect_stick, table_color, 0, 0.5)
+        fade(effect_stick, table_color, c)
+        color_burst(effect_stick, 0xFFAA00)
+        fade(effect_stick, c, table_color)
+        
+    if i == 5:
+        ping_pong(effect_stick, effect_stick.red(), 1, 1, 100)
  
 def button_player_update(change: int):
 		
@@ -226,7 +228,6 @@ def button_cards_update(change: int):
 		return
 
 	else:
-		asyncio.create_task(task_pattern_test())
 		GAME.currentCards = GAME.currentCards + change
 		if(GAME.currentCards > GAME_CARDS_MAX):
 			GAME.currentCards = GAME_CARDS_MAX
@@ -241,16 +242,13 @@ def button_decrement_time(args):
   
 	else:
 		GAME.currentTime -= 1
-		print("Time: " + str(GAME.currentTime))
-		if(GAME.currentTime < GAME_CARDS_MAX):
+		if(GAME.currentTime < 0):
 			GAME.currentTime = 0
+		print("Time: " + str(GAME.currentTime))
    
 	# write_7seg_display("T " + str(GAME.currentTime))
 	# display.display()
 	# time.sleep(1)
-
-start_color = stick.green()
-end_color = stick.red()
 
 def updateTimeGraph():
  
@@ -259,7 +257,7 @@ def updateTimeGraph():
 	
 	else:
 		gameTimeCurrent = GAME.currentTime
-		c = lerp_color(end_color, start_color, gameTimeCurrent / GAME_TIME_START)
+		c = lerp_color(stick, end_color, start_color, gameTimeCurrent / GAME_TIME_START)
 		graph.colour = c
 		stick.updateGraph1D(graph, gameTimeCurrent)
 
@@ -268,8 +266,12 @@ async def init():
 	
 	print("Starting async tasks")
 	asyncio.create_task(task_blink_led(1))
+ 
 	write_7seg_display("MHW BG")
 	display.display()
+ 
+	stick.chaos(50)
+	effect_stick.chaos(50)
 	
 	# Button callbacks
 	DebouncedSwitch(button_time, button_decrement_time)
@@ -284,12 +286,12 @@ async def init():
 	DebouncedSwitch(button_effect_4, button_effect_start, 4)
 	DebouncedSwitch(button_effect_5, button_effect_start, 5)
 	
-	# Initialise the LED stick
-	stick.chaos(200)
-	effect_stick.chaos(200)
+	# Initialise the LED sticks
+	stick.pixelsFillNow(start_color)
+	effect_stick.pixelsFillNow(table_color)
+ 
 	write_7seg_display("TIME " + str(GAME.currentTime))
 	display.display()
-	#stick.chaos(200)
  
 	#GAME.setup = False
  
@@ -297,26 +299,27 @@ async def init():
  
 async def main():
 	
-	global start_color
+	global table_color
 	
 	await init()
+	
 	await asyncio.sleep(0)
  
 	while True:
 		
-		brightness = read_pot_as_range(pot_0, 50) + 6
+		brightness = read_pot_as_range(pot_0, 100)
 		c = read_pot_as_range(pot_1, 255)
+  
 		if(c <= 250):
-			start_color = stick.wheel(c)
+			color = effect_stick.wheel(c)
 		else:
-			start_color = stick.white()
+			color = effect_stick.white()
 			
-		stick.updateBrightness(brightness)
+		table_color = lerp_color(effect_stick, color, 0, 0.25)
+		effect_stick.updateBrightness(brightness)
   
 		if GAME.setup:
 			write_7seg_display("T " + str(GAME.currentTime))
-			stick.pixelsFillNow(start_color)
-			stick.pixelsShow()
 
 		else:
 			write_7seg_display(GAME.get_fromatted_display())
@@ -324,8 +327,8 @@ async def main():
 		if not GAME.pattern:
 			updateTimeGraph()
   
-		# stick.pixelsFill(color)
-		# stick.pixelsShow()
+		effect_stick.pixelsFill(table_color)
+		effect_stick.pixelsShow()
 		display.display()
 		
 		await asyncio.sleep(SLEEP_TIME)
@@ -349,4 +352,3 @@ except:
 	asyncio.run(shutdown())
 finally:
 	asyncio.new_event_loop()
-#patterns_test(stick)
