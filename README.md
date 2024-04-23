@@ -29,3 +29,7 @@ Small WS2812B:
 Large WS2812B:
   - VCC: VBUS
   - DIN: GP 16 (Phsycial pin 21)
+
+## Wiring
+
+![Wiring diagram](https://github.com/Geko-X/MHW_BG_Tabletop_Box/blob/main/MHW_BG_Box_bb.png)
