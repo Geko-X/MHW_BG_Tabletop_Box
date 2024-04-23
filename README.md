@@ -3,7 +3,7 @@ Hardware lighting and effects "box" for MHW:BG.
 Also shows player and card counts on a 7-segment display.
 
 # Hardware
-- Raspberri Pi Pico
+- Raspberry Pi Pico
 - MAX7219 7-segment display
 - 2x potentiometers
 - 2x WS2812B lightstrips (16 LEDs and "many" LEDs)
@@ -15,7 +15,9 @@ Also shows player and card counts on a 7-segment display.
 ## Pins
 
 - Potentiometers on GP 26 and 27 (Physcial pins 31 and 32)
+  - Wire to ADC_VREF (pin 35) and ADC_GND (pin 33)
 - Tactile buttons on GP 6-15 (Physical pins 9-12, 14-17, 19, 20)
+  - Wire to 3V3 OUT (pin 36)
 - MAX7219
   - VCC: VBUS
   - DIN: GP 3 (Phsycial pin 5)
