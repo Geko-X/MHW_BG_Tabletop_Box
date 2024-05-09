@@ -35,7 +35,8 @@ spi = SPI(0, baudrate=10000000, polarity=1, phase=0, sck = seg_clock, mosi = seg
 display = seg.Display(spi, seg_cs, DISPLAY_INTESITY)
 
 # Glowbit
-GLOWBIT_SIZE = 150
+# GLOWBIT_SIZE = 67
+GLOWBIT_SIZE = 200
 GLOWBIT_BRIGHTNESS = 8
 GLOWBIT_FPS = UPDATES_PER_SECOND
 
@@ -202,11 +203,17 @@ def button_effect_start(i: int):
     if i == 3:
         c = lerp_color(effect_stick, table_color, 0, 0.5)
         fade(effect_stick, table_color, c)
-        color_burst(effect_stick, 0xFFAA00)
+        color_burst(effect_stick, effect_stick.cyan())
         fade(effect_stick, c, table_color)
-        
+     
+    if i == 4:
+        color_burst(effect_stick, effect_stick.purple(), 1, 3, 3)
+            
     if i == 5:
-        ping_pong(effect_stick, effect_stick.red(), 1, 1, 100)
+        c = lerp_color(effect_stick, table_color, 0, 0.2)
+        fade(effect_stick, table_color, c)
+        loop_pixel(effect_stick, effect_stick.yellow(), 3, 0, 1, 100, c)
+        fade(effect_stick, c, table_color)
  
 def button_player_update(change: int):
 		
