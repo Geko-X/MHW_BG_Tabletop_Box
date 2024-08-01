@@ -195,7 +195,8 @@ def button_effect_start(i: int):
     print("Starting effect "+ str(i))
     
     if i == 1:
-        tziti_flash(effect_stick)
+        #tziti_flash(effect_stick)
+        invasion(effect_stick)
         
     if i == 2:
         scoutfly(effect_stick)    
