@@ -205,16 +205,20 @@ def tziti_flash(stick: glowbit.stick):
 
 def invasion(stick: glowbit.stick):
     _c = stick.getPixel(0)
+    _b = stick.brightness
     fade(stick, _c, 0)
     #time.sleep(0.5)
     #flash(stick, stick.red(), brightness = 200, flash_time = 0.6, count = 10, delay = 0.6)
     
+    stick.brightness = 250
+
     for i in range(5):
         fade(stick, stick.black(), stick.red(), 0.1)
         time.sleep(0.54)
         fade(stick, stick.red(), stick.black(), 0.1)
         time.sleep(0.54)
 
+    stick.brightness = _b
     fade(stick, 0, _c)
 
 # Main

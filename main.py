@@ -198,23 +198,29 @@ def button_effect_start(i: int):
         #tziti_flash(effect_stick)
         invasion(effect_stick)
         
-    if i == 2:
-        scoutfly(effect_stick)    
+    # if i == 2:
+    #     scoutfly(effect_stick)    
         
-    if i == 3:
-        c = lerp_color(effect_stick, table_color, 0, 0.5)
-        fade(effect_stick, table_color, c)
-        color_burst(effect_stick, effect_stick.cyan())
-        fade(effect_stick, c, table_color)
+    # if i == 3:
+    #     c = lerp_color(effect_stick, table_color, 0, 0.5)
+    #     fade(effect_stick, table_color, c)
+    #     color_burst(effect_stick, effect_stick.cyan())
+    #     fade(effect_stick, c, table_color)
      
+    if i == 3:
+        color_burst(effect_stick, effect_stick.purple(), 0.5, 2, 0.5)
+
     if i == 4:
-        color_burst(effect_stick, effect_stick.purple(), 1, 3, 3)
-            
+        color_burst(effect_stick, effect_stick.red(), 0.5, 2, 0.5)
+
     if i == 5:
-        c = lerp_color(effect_stick, table_color, 0, 0.2)
-        fade(effect_stick, table_color, c)
-        loop_pixel(effect_stick, effect_stick.yellow(), 3, 0, 1, 100, c)
-        fade(effect_stick, c, table_color)
+        color_burst(effect_stick, effect_stick.yellow(), 0.1, 0.5, 0.1)
+
+    # if i == 5:
+    #     c = lerp_color(effect_stick, table_color, 0, 0.2)
+    #     fade(effect_stick, table_color, c)
+    #     loop_pixel(effect_stick, effect_stick.yellow(), 3, 0, 1, 100, c)
+    #     fade(effect_stick, c, table_color)
  
 def button_player_update(change: int):
 		
