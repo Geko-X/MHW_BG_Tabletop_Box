@@ -279,7 +279,7 @@ async def init():
 	display.display()
  
 	stick.chaos(50)
-	effect_stick.chaos(50)
+	# effect_stick.chaos(50)
 	
 	# Button callbacks
 	DebouncedSwitch(button_time, button_decrement_time)
