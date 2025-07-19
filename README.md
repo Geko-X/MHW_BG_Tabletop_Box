@@ -18,14 +18,17 @@ Also shows player and card counts on a 7-segment display.
   - Wire to ADC_VREF (pin 35) and ADC_GND (pin 33)
 - Tactile buttons on GP 6-15 (Physical pins 9-12, 14-17, 19, 20)
   - Wire to 3V3 OUT (pin 36)
+    
 - MAX7219
   - VCC: VBUS
   - DIN: GP 3 (Phsycial pin 5)
   - CLOCK: GP 2 (Phsycial pin 4)
   - CS: GP 5 (Phsycial pin 7)
+    
 Small WS2812B:
   - VCC: VBUS
   - DIN: GP 17 (Physcial pin 22)
+    
 Large WS2812B:
   - VCC: VBUS
   - DIN: GP 16 (Phsycial pin 21)
